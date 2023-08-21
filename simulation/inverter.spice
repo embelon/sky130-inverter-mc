@@ -1,0 +1,55 @@
+** sch_path: /home/zwierzak/projects/mc_inv/inverter.sch
+**.subckt inverter
+XM1 Vout Vin GND GND sky130_fd_pr__nfet_01v8 L=0.15 W=1 nf=1 ad='int((nf+1)/2) * W/nf * 0.29' as='int((nf+2)/2) * W/nf * 0.29'
++ pd='2*int((nf+1)/2) * (W/nf + 0.29)' ps='2*int((nf+2)/2) * (W/nf + 0.29)' nrd='0.29 / W' nrs='0.29 / W'
++ sa=0 sb=0 sd=0 mult=1 m=1
+XM2 Vout Vin VDD VDD sky130_fd_pr__pfet_01v8 L=0.15 W=1 nf=1 ad='int((nf+1)/2) * W/nf * 0.29' as='int((nf+2)/2) * W/nf * 0.29'
++ pd='2*int((nf+1)/2) * (W/nf + 0.29)' ps='2*int((nf+2)/2) * (W/nf + 0.29)' nrd='0.29 / W' nrs='0.29 / W'
++ sa=0 sb=0 sd=0 mult=1 m=1
+Vdd VDD GND 1.8
+.save i(vdd)
+Vin Vin GND 0.5
+.save i(vin)
+**** begin user architecture code
+
+
+.control
+  set wr_vecnames
+  set wr_singlescale
+  let mc_runs=10
+  let run=1
+  set curplot=new
+  set scratch=$curplot
+  setplot $scratch
+  dowhile run <= mc_runs
+    save v(Vin) v(Vout)
+    dc Vin 0 1.8 0.01
+    wrdata inverter{$&run}.txt v(Vout)
+    set run =$&run
+    set dt = $curplot
+    setplot $scratch
+    let Vout{$run}={$dt}.v(Vout)
+    setplot $dt
+    reset
+    let run = run + 1
+  end
+  setplot $scratch
+  plot allv vs dc1.v(Vin)
+  set hcopydevtype = svg
+  hardcopy out_vs_in.svg allv vs dc1.v(Vin)
+.endc
+
+
+
+.param mc_mm_switch=1
+.param mc_pr_switch=0
+.include ~/.volare/sky130A/libs.tech/ngspice/corners/tt.spice
+.include ~/.volare/sky130A/libs.tech/ngspice/r+c/res_typical__cap_typical.spice
+.include ~/.volare/sky130A/libs.tech/ngspice/r+c/res_typical__cap_typical__lin.spice
+.include ~/.volare/sky130A/libs.tech/ngspice/corners/tt/specialized_cells.spice
+
+**** end user architecture code
+**.ends
+.GLOBAL GND
+.GLOBAL VDD
+.end
